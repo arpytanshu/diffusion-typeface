@@ -91,9 +91,35 @@ class SelfAttention(nn.Module):
         attention_value = attention_value + x
         attention_value = self.ff_self(attention_value) + attention_value
         return attention_value.swapaxes(2, 1).view(-1, self.channels, self.size, self.size)
+
+
+class EMA:
+    def __init__(self, beta):
+        self.beta = beta
+        self.step = 0
     
+    def update_model_average(self, ema_model, model):
+        for  current_param, ema_param in zip(model.parameters(), ema_model.parameters()):
+            old_weight, new_weight = ema_param.data, current_param.data
+            ema_param.data = self.update_average(old_weight, new_weight)
+    
+    def update_average(self, old, new):
+        return old * self.beta + (1 + self.beta) * new
+    
+    def step_ema(self, ema_model, model, step_start_ema = 2000):
+        if self.step < step_start_ema:
+            self.reset_parameters(ema_model, model)
+            self.step += 1
+            return
+        self.update_model_average(ema_model, model)
+        self.step += 1
+    
+    def reset_parameters(self, ema_model, model):
+        ema_model.load_state_dict(model.state_dict())
+ 
+
 class Unet(nn.Module):
-    def __init__(self, c_in=3, c_out=3, time_dim=256, device='cuda'):
+    def __init__(self, c_in=3, c_out=3, time_dim=256, num_classes=None, device='cuda'):
         super().__init__()
         self.device = device
         self.time_dim = time_dim
@@ -119,6 +145,10 @@ class Unet(nn.Module):
         self.sa6 = SelfAttention(64, 64)
 
         self.outc = nn.Conv2d(64, c_out, kernel_size=1)
+        
+        if num_classes is not None:
+            self.label_emb = nn.Embedding(num_classes, time_dim)
+ 
         self.to(self.device)
 
     def pos_encoding(self, t, channels):
@@ -130,9 +160,13 @@ class Unet(nn.Module):
         pos_enc = torch.cat([pos_enc_a, pos_enc_b], dim=-1)
         return pos_enc
     
-    def forward(self, x, t):
+    def forward(self, x, t, y=None):
         t = t.unsqueeze(-1)
         t = self.pos_encoding(t, self.time_dim)
+
+        if y is not None:
+             t = t + self.label_emb(y)
+
 
         x1 = self.inc(x)
         x2 = self.down1(x1, t)
