@@ -1,8 +1,12 @@
 ## Denoising Diffusion Implementation from Scratch
- Minimal implementation of DDPM w/ CFG from scratch and trained on English typefaces dataset from `https://www.kaggle.com/datasets/killen/bw-font-typefaces`,  
- Capable of conditional generation of varied English Typefaces.
+ Minimal implementation of DDPM w/ CFG from scratch.  
+ Trained on English typefaces dataset from `https://www.kaggle.com/datasets/killen/bw-font-typefaces`  
+ Capable of conditional generation of varied English Typefaces.  
 
-![Demo](assets/diffusion3.gif)
+![Diffusion](assets/diffusion3.gif)
+
+<br>  
+
 
 
 
@@ -15,12 +19,21 @@ args.run_name = <some cool name>
 ```
 And everything should hopefully work fine.
 
+<br>  
+
+
+
+
 ### Generation
 ```
 python generations.py --run_name DDPM_cond1 --plot_save_path /tmp --string demonstration -cfg_scale 5
 ```
 
+<br>  
+
+
+
+
 ### Sample Generation
 ![Demo](assets/demo.gif)
 
-That's all folks.
